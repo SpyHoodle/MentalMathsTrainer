@@ -84,9 +84,9 @@ def ask_amount(default_amount: int, thing: str) -> int:
         elif not amount.isnumeric():
             print_error(f"Invalid number - must be an integer greater than {default_amount}")
 
-        # Has to be greater than the minimum amount of numbers (which is also the default)
-        elif int(amount) < default_amount:
-            print_error(f"Invalid number - integer must be greater than {default_amount}")
+        # Has to be greater than the minimum amount of numbers (which is 0)
+        elif int(amount) < 0:
+            print_error(f"Invalid number - integer must be greater than 0")
 
         # Must be a correct
         else:
@@ -94,7 +94,7 @@ def ask_amount(default_amount: int, thing: str) -> int:
 
 
 def train(trainer: mmtrain.MentalMathsTrainer, question_types: dict, question_type: str, question_amount: int,
-          question_num: int, nums_amount: int, game_stats: dict):
+          question_num: int, nums_amount: int, game_stats: list):
     # Print question title
     print(f"{c.magenta}Question {question_num + 1} / {question_amount}")
 
@@ -104,7 +104,8 @@ def train(trainer: mmtrain.MentalMathsTrainer, question_types: dict, question_ty
     # Check user answer
     user_answer, final_time = get_timed_answer(question_types, question_type, nums)
     correct, real_answer = trainer.check_answer(question_type, nums, user_answer)
-    game_stats[final_time] = correct, nums, user_answer, real_answer
+    game_stats.append({"time": final_time, "correct": correct,  "nums": nums,
+                       "user_answer": user_answer, "real_answer": real_answer})
 
     # If the answer is correct, tell them
     if correct:
@@ -117,7 +118,7 @@ def train(trainer: mmtrain.MentalMathsTrainer, question_types: dict, question_ty
 
 def game(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amount: int, nums_amount: int):
     # Initialise game_stats
-    game_stats = {}
+    game_stats = []
 
     for question_num in range(question_amount):
         # Clear the screen
@@ -130,10 +131,10 @@ def game(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amoun
         sleep(0.5)
 
     # Calculate the average time and round to 2d.p.
-    average_time = round(sum(game_stats) / len(game_stats), 2)
+    average_time = round(sum(question["time"] for question in game_stats) / len(game_stats), 2)
 
     # Calculate percentage correct
-    percent = round((sum(stat[0] for stat in list(game_stats.values())) / question_amount) * 100)
+    percent = round((sum(question["correct"] for question in game_stats) / question_amount) * 100)
 
     # Show the user their stats
     print(f"\n{c.magenta}-- Stats --{c.end}\n"
@@ -144,13 +145,13 @@ def game(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amoun
 
     # Show the user what questions they got wrong and the correct answer
     if percent < 100:
-        incorrect = [stat for stat in list(game_stats.values()) if not stat[0]]
+        incorrect = [question for question in game_stats if not question["correct"]]
         print(f"\n{c.red}-- Corrections --{c.end}")
-        for list_num, question_data in enumerate(incorrect):
-            question_asked = generate_question_text(trainer.question_types, question_type, question_data[1])
+        for list_num, question in enumerate(incorrect):
+            question_asked = generate_question_text(trainer.question_types, question_type, question["nums"])
 
             print(f"{c.magenta}{list_num + 1}.{c.end} {c.blue}{question_asked}{c.end} = "
-                  f"{c.green}{question_data[3]}{c.end} != {c.red}{question_data[2]}{c.end}")
+                  f"{c.green}{question['real_answer']}{c.end} != {c.red}{question['user_answer']}{c.end}")
 
     else:
         print(f"\n{c.green}Well done! You got everything correct.{c.end}")
@@ -173,9 +174,9 @@ def main():
     nums_amount = ask_amount(trainer.get_min_nums(question_type), "numbers")
 
     # Confirm before beginning
-    inp = input(f"{c.blue}Begin? {c.cyan}(Y/n):{c.end} ").upper()
+    choice = input(f"{c.blue}Begin? {c.cyan}(Y/n):{c.end} ").upper()
 
-    if inp == "N" or inp == "NO":
+    if choice == "N" or choice == "NO":
         # Quit the game if the user doesn't want to begin
         print(f"{c.blue}Goodbye!{c.end}")
 
