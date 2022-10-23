@@ -115,21 +115,10 @@ def train(trainer: mmtrain.MentalMathsTrainer, question_types: dict, question_ty
     else:
         print(f"{c.red}❌ Incorrect.{c.end} {c.blue}(took {final_time}s){c.end}")
 
+    return game_stats
 
-def game(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amount: int, nums_amount: int):
-    # Initialise game_stats
-    game_stats = []
 
-    for question_num in range(question_amount):
-        # Clear the screen
-        system("clear")
-
-        # Begin training
-        train(trainer, trainer.question_types, question_type, question_amount, question_num, nums_amount, game_stats)
-
-        # Wait half a second so user can see if they got the question right or not
-        sleep(0.5)
-
+def finished(game_stats: list, question_types: dict, question_type: str, question_amount: int):
     # Calculate the average time and round to 2d.p.
     average_time = round(sum(question["time"] for question in game_stats) / len(game_stats), 2)
 
@@ -143,18 +132,44 @@ def game(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amoun
           f"{c.blue}{percent}%{c.end}"
           f" correct.")
 
-    # Show the user what questions they got wrong and the correct answer
+    # Show the user what questions they got wrong and the correct answer, if they got something wrong
     if percent < 100:
+        # Find the incorrect questions
         incorrect = [question for question in game_stats if not question["correct"]]
+
+        # Print a title for the corrections
         print(f"\n{c.red}-- Corrections --{c.end}")
         for list_num, question in enumerate(incorrect):
-            question_asked = generate_question_text(trainer.question_types, question_type, question["nums"])
+            # Generate the question that was asked
+            question_asked = generate_question_text(question_types, question_type, question["nums"])
 
+            # Print out each correction
             print(f"{c.magenta}{list_num + 1}.{c.end} {c.blue}{question_asked}{c.end} = "
                   f"{c.green}{question['real_answer']}{c.end} != {c.red}{question['user_answer']}{c.end}")
 
     else:
+        # The user got nothing wrong, so congratulate them
         print(f"\n{c.green}Well done! You got everything correct.{c.end}")
+
+
+def start(trainer: mmtrain.MentalMathsTrainer, question_type: str, question_amount: int, nums_amount: int):
+    # Initialise game_stats
+    game_stats = []
+
+    # Loop for the specified amount of questions
+    for question_num in range(question_amount):
+        # Clear the screen
+        system("clear")
+
+        # Begin training
+        game_stats = train(trainer, trainer.question_types, question_type,
+                           question_amount, question_num, nums_amount, game_stats)
+
+        # Wait half a second so user can see if they got the question right or not
+        sleep(0.5)
+
+    # The training has finished, so we can print stats and exit
+    finished(game_stats, trainer.question_types, question_type, question_amount)
 
 
 def main():
@@ -181,8 +196,8 @@ def main():
         print(f"{c.blue}Goodbye!{c.end}")
 
     else:
-        # Start the game
-        game(trainer, question_type, question_amount, nums_amount)
+        # Start the training
+        start(trainer, question_type, question_amount, nums_amount)
 
 
 if __name__ == "__main__":
