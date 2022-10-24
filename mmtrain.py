@@ -113,26 +113,22 @@ class MentalMathsTrainer:
                 from functools import reduce
                 return reduce((lambda x, y: x / y), nums)
 
-    def store_incorrect(self, incorrect: list):
+    def store_incorrect(self, to_store: dict):
         # Load the history file
         history = self.load_json()
 
         for i, incorrect_question in enumerate(history["incorrect"]):
-            if incorrect_question["question_type"] == incorrect[0] and \
-                    incorrect_question["nums"] == incorrect[1] and \
-                    incorrect_question["user_answer"] == incorrect[2] and \
-                    incorrect_question["real_answer"] == incorrect[3]:
-
+            if incorrect_question == to_store:
                 # The question is already in the history, so we need to increment the amount of times it's been wrong
                 history["incorrect"][i]["occurrences"] += 1
 
             else:
                 # The question isn't in the history, so we need to add it
                 history["incorrect"].append({
-                    "question_type": incorrect[0],
-                    "nums": incorrect[1],
-                    "user_answer": incorrect[2],
-                    "real_answer": incorrect[3],
+                    "question_type": to_store["question_type"],
+                    "nums": to_store["nums"],
+                    "user_answer": to_store["user_answer"],
+                    "real_answer": to_store["real_answer"],
                     "occurrences": 1
                 })
                 break
@@ -153,7 +149,8 @@ class MentalMathsTrainer:
         else:
             # If add_to_history is true, we want to store the incorrect into history
             if add_to_history:
-                self.store_incorrect([question_type, nums, user_answer, real_answer])
+                self.store_incorrect({"question_type": question_type, "nums": nums,
+                                      "user_answer": user_answer, "real_answer": real_answer})
 
             # User didn't get it correct
             return False, real_answer
